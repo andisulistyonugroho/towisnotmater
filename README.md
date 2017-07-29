@@ -11,6 +11,7 @@ Mater is also capable of racing, as well as being the (self-proclaimed) world's 
 * Scraping cars informations from websites
 * Version: 1.0
 * [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
+* [Lear Scrapy](https://scrapy.org/)
 
 ### How do I get set up? ###
 
@@ -23,7 +24,8 @@ Mater is also capable of racing, as well as being the (self-proclaimed) world's 
 * Dependencies
 * Database configuration
     * perhaps going to use mongodb
-* How to run tests
+* How to run
+
 * Deployment instructions
 
 ### Contribution guidelines ###

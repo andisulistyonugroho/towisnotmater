@@ -65,9 +65,11 @@ DEFAULT_REQUEST_HEADERS = {
 
 # Configure item pipelines
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html
-#ITEM_PIPELINES = {
-#    'towmater.pipelines.TowmaterPipeline': 300,
-#}
+ITEM_PIPELINES = {
+    'towmater.pipes.cleaners.CleanerPipeline': 177,
+    'towmater.pipes.cars.CarPipeline': 277,
+    'towmater.pipes.car_details.CarDetailPipeline': 377,
+}
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See http://doc.scrapy.org/en/latest/topics/autothrottle.html
@@ -91,3 +93,6 @@ DEFAULT_REQUEST_HEADERS = {
 #HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
 
 # LOG_LEVEL = 'CRITICAL'
+MONGODB_SERVER = "localhost"
+MONGODB_PORT = 27017
+MONGODB_DB = "towmater"

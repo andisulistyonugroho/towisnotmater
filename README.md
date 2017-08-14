@@ -19,6 +19,7 @@ Mater is also capable of racing, as well as being the (self-proclaimed) world's 
     * install python
     * install pip
     * pip install scrapy
+    * pip install pymongo
 * Configuration
     * later on
 * Dependencies

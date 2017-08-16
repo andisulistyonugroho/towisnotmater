@@ -10,6 +10,7 @@ from scrapy.item import Item, Field
 
 class CarItem(Item):
     # define the fields for your item here like:
+    site_id = Field()
     car_id = Field()
     name = Field()
     price = Field()

@@ -2,22 +2,39 @@
 
 import scrapy
 import datetime
+import pymongo
 from scrapy.loader import ItemLoader
 from towmater.items.cars import CarItem
 from towmater.items.car_details import CarDetail
 
 class CarsSpider(scrapy.Spider):
     name = 'cars'
+    # do not set domains to allow all domain
     # allowed_domains = ['mabes.dev']
     # start_urls = ['http://mabes.dev/scape_target_detail.html']
-    allowed_domains = ['carsalesnetwork.com.au']
-    start_urls = ['http://csndealers.carsalesnetwork.com.au/listing?dealerId=AGC-SELLER-28894%2BAGC-SELLER-14679%2BAGC-SELLER-51021']
+
+    def start_requests(self):
+        mongo_uri = self.settings.get('MONGODB_SERVER')
+        mongo_db = self.settings.get('MONGODB_DB', 'cars')
+        collection = 'sites'
+
+        self.client = pymongo.MongoClient(mongo_uri)
+        self.db = self.client[mongo_db]
+        self.collection = self.db[collection]
+
+        for site in self.collection.find({'is_active':1}):
+            url2scrape = site['url_to_scrape']
+            scrape_request = scrapy.Request(url2scrape, callback=self.parse)
+            scrape_request.meta['site_id'] = str(site['_id'])
+            yield scrape_request
 
     def parse(self, response):
         #--- wrapper search result
         cars = response.xpath('//div[@class="search-results"]/div[@class="result-item"]')
+        site_id = response.meta['site_id']
         for car in cars:
             item = CarItem()
+            item['site_id'] = site_id
             item['car_id'] = car.xpath('.//div[@class="view-more"]/a/@href').extract_first()
             item['name'] = car.xpath('.//h4[@class="result-item-title"]/a/text()').extract_first()
             item['price'] = car.xpath('.//div[@class="price"]/b/text()').extract_first()
@@ -35,7 +52,7 @@ class CarsSpider(scrapy.Spider):
         next_page = response.xpath('//ul[@class="pagination pull-right"]/li[@class="active"]/following-sibling::li/a/@href').extract_first()
         if next_page is not None:
             next_page = response.urljoin(next_page)
-            yield scrapy.Request(next_page, callback=self.parse)
+            yield scrapy.Request(next_page, callback=self.parse,meta={'site_id':site_id})
 
     pass
 

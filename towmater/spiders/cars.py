@@ -57,12 +57,11 @@ class CarsSpider(scrapy.Spider):
                 detail_request = scrapy.Request(detail_page, callback=self.parse_detail)
                 detail_request.meta['car_id'] = item['car_id']
                 yield detail_request
-            break
 
-        # next_page = response.xpath('//ul[@class="pagination pull-right"]/li[@class="active"]/following-sibling::li/a/@href').extract_first()
-        # if next_page is not None:
-        #     next_page = response.urljoin(next_page)
-        #     yield scrapy.Request(next_page, callback=self.parse,meta={'site_id':site_id})
+        next_page = response.xpath('//ul[@class="pagination pull-right"]/li[@class="active"]/following-sibling::li/a/@href').extract_first()
+        if next_page is not None:
+            next_page = response.urljoin(next_page)
+            yield scrapy.Request(next_page, callback=self.parse,meta={'site_id':site_id})
 
     pass
 

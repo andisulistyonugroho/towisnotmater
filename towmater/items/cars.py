@@ -15,6 +15,7 @@ class CarItem(Item):
     name = Field()
     price = Field()
     state = Field()
+    status = Field()
     listing_feature = Field()
     date_collected_from = Field() # first time we scrape it
     date_collected_to = Field() # last scraped time

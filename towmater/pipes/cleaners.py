@@ -33,6 +33,24 @@ class CleanerPipeline(object):
                     the_comment.append(list_comment.strip())
 
                 item['comments'] = '<br>'.join(the_comment)
+            elif the_data == 'image_url':
+                # split the url to get the image id
+                # pattern example:
+                # "https://carsales.li.csnstatic.com/dealerweb/car/dealer/cd4707527024606843066.jpg?aspect=centered&height=700&width=1050"
+                # expected: cd4707527024606843066
+                the_image_url = []
+                for image in item['image_url']:
+                    image_url = image.xpath('.//@src').extract_first()
+                    if image_url is None:
+                        image_url = image.xpath('.//@data-src').extract_first()
+                    the_image_url.append(image_url)
+
+                item['image_url'] = the_image_url
+
+                # get image id (later)
+                # image_url = item['image_url'].rsplit('/',1)[-1]
+                # image_url = image_url.rsplit('.',1)[0]
+                # item['image_url'] = image_url
             else:
                 if type(item[the_data]) is str or type(item[the_data]) is unicode:
                     item[the_data] = re.sub('[\r\n\t]', '', remove_tags(item[the_data].strip()))

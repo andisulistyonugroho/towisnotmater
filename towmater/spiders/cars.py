@@ -6,6 +6,7 @@ import pymongo
 from scrapy.loader import ItemLoader
 from towmater.items.cars import CarItem
 from towmater.items.car_details import CarDetail
+from towmater.items.car_images import CarImage
 
 class CarsSpider(scrapy.Spider):
     name = 'cars'
@@ -29,9 +30,17 @@ class CarsSpider(scrapy.Spider):
             yield scrape_request
 
     def parse(self, response):
+
+        site_id = response.meta['site_id']
+        #--- set all car status to closed, it will be updated to open when
+        #--- when the spider found it on the page
+        self.db['cars'].update(
+            {'site_id': site_id},
+            {'$set': {'status': 'closed'}}
+        )
+
         #--- wrapper search result
         cars = response.xpath('//div[@class="search-results"]/div[@class="result-item"]')
-        site_id = response.meta['site_id']
         for car in cars:
             item = CarItem()
             item['site_id'] = site_id
@@ -48,11 +57,12 @@ class CarsSpider(scrapy.Spider):
                 detail_request = scrapy.Request(detail_page, callback=self.parse_detail)
                 detail_request.meta['car_id'] = item['car_id']
                 yield detail_request
+            break
 
-        next_page = response.xpath('//ul[@class="pagination pull-right"]/li[@class="active"]/following-sibling::li/a/@href').extract_first()
-        if next_page is not None:
-            next_page = response.urljoin(next_page)
-            yield scrapy.Request(next_page, callback=self.parse,meta={'site_id':site_id})
+        # next_page = response.xpath('//ul[@class="pagination pull-right"]/li[@class="active"]/following-sibling::li/a/@href').extract_first()
+        # if next_page is not None:
+        #     next_page = response.urljoin(next_page)
+        #     yield scrapy.Request(next_page, callback=self.parse,meta={'site_id':site_id})
 
     pass
 
@@ -70,7 +80,24 @@ class CarsSpider(scrapy.Spider):
                 item[the_key] = the_value
             # else:
                 #print "KEY({}) : VALUE({}) not supported on CarDetail()".format(the_key,the_value)
-
         yield item
 
+        images = response.xpath('//img[contains(@class,"lazyOwl")]')
+        if images is not None:
+            car_images = CarImage()
+            car_images['car_id'] = response.meta['car_id']
+            car_images['image_url'] = images
+            yield car_images
+
+    pass
+
+    def parse_image(self,images,car_id):
+        for image in images:
+            image_url = image.xpath('.//@src').extract_first()
+            if image_url is None:
+                image_url = image.xpath('.//@data-src').extract_first()
+            item = CarImage()
+            item['car_id'] = car_id
+            item['image_url'] = image_url
+            yield item
     pass

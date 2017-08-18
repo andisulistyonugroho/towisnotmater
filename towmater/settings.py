@@ -69,6 +69,7 @@ ITEM_PIPELINES = {
     'towmater.pipes.cleaners.CleanerPipeline': 177,
     'towmater.pipes.cars.CarPipeline': 277,
     'towmater.pipes.car_details.CarDetailPipeline': 377,
+    'towmater.pipes.car_images.CarImagePipeline': 477,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
@@ -92,7 +93,9 @@ ITEM_PIPELINES = {
 #HTTPCACHE_IGNORE_HTTP_CODES = []
 #HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
 
-# LOG_LEVEL = 'CRITICAL'
-MONGODB_SERVER = "localhost"
+# LOG_ENABLED = True
+# LOG_FILE = leave it empty file will be defined by cronjob
+# LOG_LEVEL = 'logging.WARNING'
+MONGODB_SERVER = 'localhost'
 MONGODB_PORT = 27017
-MONGODB_DB = "towmater"
+MONGODB_DB = 'towmater'

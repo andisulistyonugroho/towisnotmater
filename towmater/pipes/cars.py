@@ -47,6 +47,7 @@ class CarPipeline(object):
             item['date_collected_from'] = item['date_collected_to']
             item['date_collected_to'] = item['date_collected_to']
             item['last_changed_date'] = None
+            item['status'] = 'open'
             self.collection.insert(dict(item))
             return item
     pass
@@ -86,6 +87,7 @@ class CarPipeline(object):
                 item['last_changed_date'] = datetime.datetime.utcnow()
                 item['date_collected_from'] = old_data['date_collected_from']
                 item['date_collected_to'] = date_collected_to
+                item['status'] = 'open'
                 self.collection.replace_one(
                     {'car_id': item['car_id']},
                     dict(item)
@@ -93,6 +95,6 @@ class CarPipeline(object):
         else:
             self.collection.update_one(
                 {'car_id': item['car_id']},
-                {'$set': {'date_collected_to': date_collected_to}}
+                {'$set': {'date_collected_to': date_collected_to,'status': 'open'}}
             )
     pass

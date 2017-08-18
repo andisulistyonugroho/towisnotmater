@@ -64,9 +64,6 @@ class CarDetailPipeline(object):
     # reattach last_update
     def updateAndCreateHistory(self,item):
         # check for changes, save to history and update
-        date_collected_to = item['date_collected_to']
-        item.pop('date_collected_to')
-
         find_identical_record = self.collection.find_one(item)
 
         if find_identical_record is None:

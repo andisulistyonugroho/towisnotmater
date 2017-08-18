@@ -27,6 +27,12 @@ class CleanerPipeline(object):
                     the_feature.append(list_feature.strip())
 
                 item['listing_feature'] = ','.join(the_feature)
+            elif the_data == 'comments':
+                the_comment = []
+                for list_comment in item['comments']:
+                    the_comment.append(list_comment.strip())
+
+                item['comments'] = '<br>'.join(the_comment)
             else:
                 if type(item[the_data]) is str or type(item[the_data]) is unicode:
                     item[the_data] = re.sub('[\r\n\t]', '', remove_tags(item[the_data].strip()))

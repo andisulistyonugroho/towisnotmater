@@ -39,9 +39,6 @@ class CarDetailPipeline(object):
 
     def handleCars(self,item,spider):
         #handle cars here
-        self.collection.insert(dict(item))
-        return item
-
         if self.doWeHaveIt(item['car_id']):
             self.updateAndCreateHistory(item)
             return item

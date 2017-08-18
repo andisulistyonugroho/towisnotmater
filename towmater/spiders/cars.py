@@ -57,12 +57,14 @@ class CarsSpider(scrapy.Spider):
     pass
 
     def parse_detail(self, response):
+        comments = response.xpath('//*[*[. = "Comments"]]/p/text()').extract()
         car_details = response.xpath('//*[*[*[. = "Vehicle Details"]]]/table/tr')
         item = CarDetail()
+        item['comments'] = comments
+        item['car_id'] = response.meta['car_id']
         for car_detail in car_details:
             the_key = car_detail.xpath('.//th/text()').extract_first()
             the_value = car_detail.xpath('.//td').extract_first()
-            item['car_id'] = response.meta['car_id']
             the_key = the_key.lower().replace(' ','_')
             if the_key in item.fields:
                 item[the_key] = the_value

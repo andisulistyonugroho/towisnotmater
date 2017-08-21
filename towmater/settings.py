@@ -98,4 +98,4 @@ ITEM_PIPELINES = {
 # LOG_LEVEL = 'logging.WARNING'
 MONGODB_SERVER = 'localhost'
 MONGODB_PORT = 27017
-MONGODB_DB = 'towmater'
+MONGODB_DB = 'freecarsales'

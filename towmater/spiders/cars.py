@@ -11,8 +11,8 @@ from towmater.items.car_images import CarImage
 class CarsSpider(scrapy.Spider):
     name = 'cars'
     # do not set domains to allow all domain
-    # allowed_domains = ['mabes.dev']
-    # start_urls = ['http://mabes.dev/scape_target_detail.html']
+    #allowed_domains = ['mabes.dev']
+    #start_urls = ['http://mabes.dev/scape_target_detail.html']
 
     def start_requests(self):
         mongo_uri = self.settings.get('MONGODB_SERVER')
@@ -25,9 +25,16 @@ class CarsSpider(scrapy.Spider):
 
         for site in self.collection.find({'is_active':1}):
             url2scrape = site['url_to_scrape']
-            scrape_request = scrapy.Request(url2scrape, callback=self.parse)
-            scrape_request.meta['site_id'] = str(site['_id'])
-            yield scrape_request
+            #url2scrape = 'http://mabes.dev/scape_target.html'
+            if site['spider_element']['listing'] is not None and site['spider_element']['listing'] != '':
+                scrape_request = scrapy.Request(url2scrape, callback=self.parse)
+                scrape_request.meta['site_id'] = str(site['_id'])
+                scrape_request.meta['listing'] = site['spider_element']['listing']  if site['spider_element']['listing'] is not None and site['spider_element']['listing'] != '' else None
+                scrape_request.meta['detail'] = site['spider_element']['detail'] if site['spider_element']['detail'] is not None and site['spider_element']['detail'] != '' else None
+                scrape_request.meta['photo'] = site['spider_element']['photo'] if site['spider_element']['photo'] is not None and site['spider_element']['photo'] != '' else None
+                yield scrape_request
+            else:
+                print 'Spider element configuration not found'
 
     def parse(self, response):
 
@@ -40,63 +47,62 @@ class CarsSpider(scrapy.Spider):
         )
 
         #--- wrapper search result
-        cars = response.xpath('//div[@class="search-results"]/div[@class="result-item"]')
+        listing = response.meta['listing']
+        detail = response.meta['detail']
+        photo = response.meta['photo']
+        cars = response.xpath(listing['wrapper'])
         for car in cars:
             item = CarItem()
             item['site_id'] = site_id
-            item['car_id'] = car.xpath('.//div[@class="view-more"]/a/@href').extract_first()
-            item['name'] = car.xpath('.//h4[@class="result-item-title"]/a/text()').extract_first()
-            item['price'] = car.xpath('.//div[@class="price"]/b/text()').extract_first()
-            item['state'] = car.xpath('.//div[@class="state"]/text()').extract_first()
-            item['listing_feature'] = car.xpath('.//ul[@class="listing-features"]/li/text()').extract()
+            item['car_id'] = car.xpath(listing['car_id']).extract_first() if listing['car_id'] is not None and listing['car_id'] != '' else ''
+            item['name'] = car.xpath(listing['name']).extract_first() if listing['name'] is not None and listing['name'] != '' else ''
+            item['price'] = car.xpath(listing['price']).extract_first() if listing['price'] is not None and listing['price'] != '' else ''
+            item['state'] = car.xpath(listing['state']).extract_first() if listing['state'] is not None and listing['state'] != '' else ''
+            item['listing_feature'] = car.xpath(listing['listing_feature']).extract() if listing['listing_feature'] is not None and listing['listing_feature'] != '' else ''
             item['date_collected_to'] = datetime.datetime.utcnow()
             yield item
-            detail_page = car.xpath('.//div[@class="view-more"]/a/@href').extract_first()
-            if detail_page is not None:
-                detail_page = response.urljoin(detail_page)
-                detail_request = scrapy.Request(detail_page, callback=self.parse_detail)
-                detail_request.meta['car_id'] = item['car_id']
-                yield detail_request
-
-        next_page = response.xpath('//ul[@class="pagination pull-right"]/li[@class="active"]/following-sibling::li/a/@href').extract_first()
+            if detail['detail_url'] is not None and detail['detail_url'] != '':
+                detail_page = car.xpath(detail['detail_url']).extract_first()
+                if detail_page is not None:
+                    detail_page = response.urljoin(detail_page)
+                    detail_request = scrapy.Request(detail_page, callback=self.parse_detail)
+                    detail_request.meta['car_id'] = item['car_id']
+                    detail_request.meta['detail'] = detail
+                    detail_request.meta['photo'] = photo
+                    yield detail_request
+            break;
+        next_page = response.xpath(listing['next_page']).extract_first()
         if next_page is not None:
             next_page = response.urljoin(next_page)
-            yield scrapy.Request(next_page, callback=self.parse,meta={'site_id':site_id})
+            yield scrapy.Request(next_page, callback=self.parse,meta={'site_id':site_id,'listing':listing,'detail':detail,'photo':photo})
 
     pass
 
+    # on detail loop inside spider element
+    # if key matches with CarDetail() item then process it
     def parse_detail(self, response):
-        comments = response.xpath('//*[*[. = "Comments"]]/p/text()').extract()
-        car_details = response.xpath('//*[*[*[. = "Vehicle Details"]]]/table/tr')
+        detail = response.meta['detail']
+        car_details = response.xpath(detail['wrapper'])
         item = CarDetail()
-        item['comments'] = comments
         item['car_id'] = response.meta['car_id']
-        for car_detail in car_details:
-            the_key = car_detail.xpath('.//th/text()').extract_first()
-            the_value = car_detail.xpath('.//td').extract_first()
-            the_key = the_key.lower().replace(' ','_')
-            if the_key in item.fields:
-                item[the_key] = the_value
-            # else:
-                #print "KEY({}) : VALUE({}) not supported on CarDetail()".format(the_key,the_value)
+        for k in detail:
+            if k in item.fields:
+                if k == 'comments':
+                        item[k] = response.xpath(detail[k]).extract()
+                else:
+                        item[k] = response.xpath(detail[k]).extract_first()
+            else:
+                if k != 'wrapper' and k != 'detail_url':
+                    print 'the key: {} is not on CarDetail items'.format(k)
         yield item
 
-        images = response.xpath('//img[contains(@class,"lazyOwl")]')
-        if images is not None:
-            car_images = CarImage()
-            car_images['car_id'] = response.meta['car_id']
-            car_images['image_url'] = images
-            yield car_images
+        photo = response.meta['photo']
+        if photo is not None and photo['wrapper'] is not None and photo['wrapper'] != '':
+            images = response.xpath(photo['wrapper'])
+            if images is not None:
+                car_images = CarImage()
+                car_images['car_id'] = response.meta['car_id']
+                car_images['image_url'] = images
+                yield car_images
 
-    pass
-
-    def parse_image(self,images,car_id):
-        for image in images:
-            image_url = image.xpath('.//@src').extract_first()
-            if image_url is None:
-                image_url = image.xpath('.//@data-src').extract_first()
-            item = CarImage()
-            item['car_id'] = car_id
-            item['image_url'] = image_url
-            yield item
     pass

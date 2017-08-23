@@ -16,9 +16,9 @@ class CarDetail(Item):
     drive = Field()
     body_style = Field()
     doors = Field()
-    seat_capacity = Field() # first time we scrape it
-    engine_size = Field() # last scraped time
-    engine_type = Field() # last scraped time
+    seat_capacity = Field()
+    engine_size = Field()
+    engine_type = Field()
     reg_plate = Field()
     compliance_date = Field()
     towing_capacitybraked = Field()

@@ -93,9 +93,9 @@ ITEM_PIPELINES = {
 #HTTPCACHE_IGNORE_HTTP_CODES = []
 #HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
 
-# LOG_ENABLED = True
+LOG_ENABLED = True
 # LOG_FILE = leave it empty file will be defined by cronjob
-# LOG_LEVEL = 'logging.WARNING'
+LOG_LEVEL = 'WARNING'
 MONGODB_SERVER = 'localhost'
 MONGODB_PORT = 27017
 MONGODB_DB = 'freecarsales'

@@ -56,6 +56,6 @@ class CleanerPipeline(object):
                     item[the_data] = re.sub('[\r\n\t]', '', remove_tags(item[the_data].strip()))
                 else:
                     x = type(item[the_data])
-                    print "the data: {} not string but {}".format(the_data,x)
+                    #print "the data: {} not string but {}".format(the_data,x)
 
         return item

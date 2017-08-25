@@ -25,7 +25,7 @@ class CarsSpider(scrapy.Spider):
 
         for site in self.collection.find({'is_active':1}):
             url2scrape = site['url_to_scrape']
-            #url2scrape = 'http://mabes.dev/scape_target.html'
+            # url2scrape = 'http://mabes.dev/scape_target.html'
             if site['spider_element']['listing'] is not None and site['spider_element']['listing'] != '':
                 scrape_request = scrapy.Request(url2scrape, callback=self.parse)
                 scrape_request.meta['site_id'] = str(site['_id'])
@@ -37,19 +37,11 @@ class CarsSpider(scrapy.Spider):
                 print 'Spider element configuration not found'
 
     def parse(self, response):
-
         site_id = response.meta['site_id']
-        #--- set all car status to closed, it will be updated to open when
-        #--- when the spider found it on the page
-        self.db['cars'].update(
-            {'site_id': site_id},
-            {'$set': {'status': 'closed'}}
-        )
-
-        #--- wrapper search result
         listing = response.meta['listing']
         detail = response.meta['detail']
         photo = response.meta['photo']
+        #--- wrapper search result
         cars = response.xpath(listing['wrapper'])
         for car in cars:
             item = CarItem()

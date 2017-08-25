@@ -7,10 +7,14 @@
 import pymongo
 import datetime
 from towmater.items.cars import CarItem
+from pprint import pprint
 
 class CarPipeline(object):
 
     collection_name = 'cars'
+    collected_cars = {}
+    item_car = []
+    tmp_site_id = None
 
     def __init__(self, mongo_uri, mongo_db):
             self.mongo_uri = mongo_uri
@@ -29,6 +33,7 @@ class CarPipeline(object):
         self.collection = self.db[self.collection_name]
 
     def close_spider(self, spider):
+        self.compareScrapedCars('',self.collected_cars)
         self.client.close()
 
     def process_item(self, item, spider):
@@ -38,10 +43,10 @@ class CarPipeline(object):
             return item # return the item to let other pipeline to handle it
 
     def handleCars(self,item,spider):
-        #handle cars here
+        # handle cars here
+        # check for existence
         if self.doWeHaveIt(item['car_id']):
             self.updateAndCreateHistory(item)
-            return item
         else:
             # insert new document
             item['date_collected_from'] = item['date_collected_to']
@@ -49,7 +54,29 @@ class CarPipeline(object):
             item['last_changed_date'] = None
             item['status'] = 'open'
             self.collection.insert(dict(item))
-            return item
+
+        # create a list of dictionary of cars that exist on the site
+        if self.tmp_site_id is None:
+            self.item_car.append(item['car_id'])
+            self.collected_cars[item['site_id']] = self.item_car
+        elif self.tmp_site_id != item['site_id']:
+            # if site changes, run the comparison method
+            # then remove the collected cars from dictionary
+            # the other item inside dict will be process when the spider closed
+            self.compareScrapedCars(self.tmp_site_id,self.item_car)
+            del self.collected_cars[self.tmp_site_id]
+
+            self.item_car = []
+            self.item_car.append(item['car_id'])
+            self.collected_cars[item['site_id']] = self.item_car
+        else:
+            self.item_car.append(item['car_id'])
+            self.collected_cars[item['site_id']] = self.item_car
+
+        self.tmp_site_id = item['site_id']
+
+        return item
+
     pass
 
     def doWeHaveIt(self,car_id):
@@ -97,4 +124,48 @@ class CarPipeline(object):
                 {'car_id': item['car_id']},
                 {'$set': {'date_collected_to': date_collected_to,'status': 'open'}}
             )
+    pass
+
+    # compare the result
+    def compareScrapedCars(self,site_id,collected_cars):
+        if site_id != '' and type(collected_cars) is not dict:
+            all_cars = self.collection.find( {'site_id':site_id}, {'_id':0, 'car_id':1} )
+            if all_cars is not None:
+                list_cars = []
+                for cars in all_cars:
+                    list_cars.append(cars['car_id'])
+
+                closed_car = set(list_cars).difference(collected_cars)
+
+                try:
+                   last_changed_date = datetime.datetime.utcnow()
+                   closed_car = [s.encode('ascii') for s in closed_car]
+                   self.collection.update_many(
+                      { 'site_id': site_id, 'car_id': { '$in': closed_car } },
+                      { '$set': { 'status' : 'closed', 'last_changed_date': last_changed_date } }
+                   );
+                except Exception as inst:
+                   pprint(inst)
+
+        else:
+            # cars is a dict
+            for site_id in collected_cars:
+                all_cars = self.collection.find( {'site_id': site_id}, {'_id':0, 'car_id':1} )
+                if all_cars is not None:
+                    list_cars = []
+                    for cars in all_cars:
+                        list_cars.append(cars['car_id'])
+
+                    closed_car = set(list_cars).difference(collected_cars[site_id])
+
+                    try:
+                       last_changed_date = datetime.datetime.utcnow()
+                       closed_car = [s.encode('ascii') for s in closed_car]
+                       self.collection.update_many(
+                          { 'site_id': site_id, 'car_id': { '$in': closed_car } },
+                          { '$set': { 'status' : 'closed', 'last_changed_date': last_changed_date } }
+                       );
+                    except Exception as inst:
+                       pprint(inst)
+
     pass

@@ -62,7 +62,7 @@ class CarsSpider(scrapy.Spider):
                     detail_request.meta['detail'] = detail
                     detail_request.meta['photo'] = photo
                     yield detail_request
-            break;
+
         next_page = response.xpath(listing['next_page']).extract_first()
         if next_page is not None:
             next_page = response.urljoin(next_page)

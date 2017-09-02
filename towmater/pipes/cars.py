@@ -6,13 +6,14 @@
 # See: http://doc.scrapy.org/en/latest/topics/item-pipeline.html
 import pymongo
 import datetime
+import collections
 from towmater.items.cars import CarItem
 from pprint import pprint
 
 class CarPipeline(object):
 
     collection_name = 'cars'
-    collected_cars = {}
+    collected_cars = collections.defaultdict(list)
     item_car = []
     tmp_site_id = None
 
@@ -31,6 +32,7 @@ class CarPipeline(object):
         self.client = pymongo.MongoClient(self.mongo_uri)
         self.db = self.client[self.mongo_db]
         self.collection = self.db[self.collection_name]
+        self.setStatus()
 
     def close_spider(self, spider):
         self.compareScrapedCars('',self.collected_cars)
@@ -55,25 +57,7 @@ class CarPipeline(object):
             item['status'] = 'open'
             self.collection.insert(dict(item))
 
-        # create a list of dictionary of cars that exist on the site
-        if self.tmp_site_id is None:
-            self.item_car.append(item['car_id'])
-            self.collected_cars[item['site_id']] = self.item_car
-        elif self.tmp_site_id != item['site_id']:
-            # if site changes, run the comparison method
-            # then remove the collected cars from dictionary
-            # the other item inside dict will be process when the spider closed
-            self.compareScrapedCars(self.tmp_site_id,self.item_car)
-            del self.collected_cars[self.tmp_site_id]
-
-            self.item_car = []
-            self.item_car.append(item['car_id'])
-            self.collected_cars[item['site_id']] = self.item_car
-        else:
-            self.item_car.append(item['car_id'])
-            self.collected_cars[item['site_id']] = self.item_car
-
-        self.tmp_site_id = item['site_id']
+        self.collected_cars[item['site_id']].append(item['car_id'])
 
         return item
 
@@ -126,10 +110,15 @@ class CarPipeline(object):
             )
     pass
 
+    # set status of the car to synchronizing during scraping process
+    def setStatus(self):
+        last_changed_date = datetime.datetime.utcnow()
+        self.collection.update_many({'status':'open'},{'$set':{'status':'sync','last_changed_date':''}})
+
     # compare the result
     def compareScrapedCars(self,site_id,collected_cars):
         if site_id != '' and type(collected_cars) is not dict:
-            all_cars = self.collection.find( {'site_id':site_id}, {'_id':0, 'car_id':1} )
+            all_cars = self.collection.find( {'site_id':site_id,'status':'sync'}, {'_id':0, 'car_id':1} )
             if all_cars is not None:
                 list_cars = []
                 for cars in all_cars:
@@ -150,7 +139,7 @@ class CarPipeline(object):
         else:
             # cars is a dict
             for site_id in collected_cars:
-                all_cars = self.collection.find( {'site_id': site_id}, {'_id':0, 'car_id':1} )
+                all_cars = self.collection.find( {'site_id':site_id,'status':'sync'}, {'_id':0, 'car_id':1} )
                 if all_cars is not None:
                     list_cars = []
                     for cars in all_cars:
@@ -161,6 +150,10 @@ class CarPipeline(object):
                     try:
                        last_changed_date = datetime.datetime.utcnow()
                        closed_car = [s.encode('ascii') for s in closed_car]
+                       print '===========SITE ID: {} ==========='.format(site_id)
+                       print 'Collected: {}'.format(len(collected_cars[site_id]))
+                       print 'Closed: {}'.format(len(closed_car))
+                       pprint(closed_car)
                        self.collection.update_many(
                           { 'site_id': site_id, 'car_id': { '$in': closed_car } },
                           { '$set': { 'status' : 'closed', 'last_changed_date': last_changed_date } }

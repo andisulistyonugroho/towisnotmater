@@ -39,11 +39,13 @@ class CarImagePipeline(object):
 
     def handleCars(self,item,spider):
         #handle cars here
-        self.collection.remove( { 'car_id' : item['car_id'] } );
+        if item['image_url'] is not None:
+            self.collection.remove( { 'car_id' : item['car_id'] } );
 
-        the_images = {} #initialize dict
-        for image_url in item['image_url']:
-            the_images['car_id'] = item['car_id']
-            the_images['image_url'] = image_url
-            self.collection.insert(dict(the_images))
+            the_images = {} #initialize dict
+            for image_url in item['image_url']:
+                the_images['car_id'] = item['car_id']
+                the_images['image_url'] = image_url
+                self.collection.insert(dict(the_images))
+
     pass

@@ -1,9 +1,8 @@
-![Alt text](https://vignette4.wikia.nocookie.net/pixar/images/e/e1/TowMaterCars3Artwork.jpg/revision/latest?cb=20170430135416)
 # README #
 
 Mater is a friendly tow truck with buckteeth. He speaks with a thick Southern accent with a dash of hillbilly twang and frequently uses incorrect syntax.
 During the film, Mater shows Lightning how to do Tractor Tippin' and how to drive backwards without crashing by using rearview mirrors.
-Mater is also capable of racing, as well as being the (self-proclaimed) world's best backwards driver. He attributes his skill to his rear-view mirrors and his own philosophy: "Don't need to know where I'm going, just need to know where I've been."
+Mater is also capable of racing, as well as being the (self-proclaimed) world's best backwards driver. He attributes his skill to his rear-view mirrors and his own philosophy: "Don't need to know where I'm going, just need to know where I've been." The code in this repo meant to scrap websites for list of used cars and show best deals available, this repo inspired by the character.
 
 
 ### What is this repository for? ###
